@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
 from flask import Flask, request, jsonify, send_from_directory
-from backend.geotiff_merger import merge_files
 from backend.geopoint import GeoPoint
+from backend.geotiff_merger import merge_files
+from backend.checksum_generator import get_checksum
 
 app = Flask(__name__)
 app.config['LOAD_PATH'] = '/home/user/projects/elevation_map/resources/geotiff/'
@@ -15,13 +16,10 @@ messages = {
 }
 
 request_links = {
-    'request_links': [
-        f'{url_prefix}/merge_files?files=<filenames>',
-        f'{url_prefix}/point?lat=<lat>&lon=<lon>',
+    'routes': [
         f'{url_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>'
     ]
 }
-
 
 def return_error(err):
     return {'status': 'error', 'message': str(err)}
@@ -35,34 +33,9 @@ def position_error_handle(lat, lon):
     else:
         return GeoPoint(lat, lon)
 
-@app.route('/')
-def root_api():
-    return request_links
-
-#@app.route(f'{url_prefix}/merge_files')
-#def merge_files_api():
-#    filenames = request.args.get('files')
-#    if not filenames:
-#        return return_error(messages['NO_MATCH_ARGS'])
-#    filenames = [x.strip() for x in filenames.split(',')]
-#    merge_files()
-#    return jsonify(filenames)
-
-@app.route(f'{url_prefix}/point')
-def get_point_api():
-    lat = request.args.get('lat')
-    lon = request.args.get('lon')
-    if not lat or not lon:
-        return return_error(messages['NO_MATCH_ARGS'])
-    pos_err = position_error_handle(lat, lon)
-    if type(pos_err) is dict:
-        return pos_err
-    return {'status': 'success'}
-
-@app.route(f'{url_prefix}/polygon')
-def get_polygon_api():
-    sw = request.args.get('sw')
-    ne = request.args.get('ne')
+def process_points(args):
+    sw = args.get('sw')
+    ne = args.get('ne')
     if not sw or not ne:
         return return_error(messages['NO_MATCH_ARGS'])
     sw, ne = sw.split(','), ne.split(',')
@@ -74,14 +47,27 @@ def get_polygon_api():
         return sw
     if type(ne) is dict:
         return ne
-    points = [sw, ne]
-    merge_files(points, app.config['LOAD_PATH'],
-            app.config['SAVE_PATH'], str(id(points)))
+    return sw, ne
+
+@app.route('/')
+@app.route('/help')
+def root_api():
+    return request_links
+
+@app.route(f'{url_prefix}/polygon')
+def get_polygon_api():
+    points = process_points(request.args)
+    outfile = merge_files(points, app.config['LOAD_PATH'],
+            app.config['SAVE_PATH'])
     try:
         return send_from_directory(app.config['SAVE_PATH'],
-            path=f'{str(id(points))}.tif', as_attachment=True)
+                path=outfile, as_attachment=True)
     except Exception as e:
         return return_error(e)
+
+@app.errorhandler(404)
+def page_not_found_api(err):
+    return {'status': 'error', 'message': str(err)}
 
 if __name__ == '__main__':
     app.run(debug=True, port=6767)
