@@ -2,7 +2,7 @@
 
 import hashlib
 
-def get_checksum(path, filename=None):
+def GenerateChecksum(path, filename=None):
     if filename:
         path += filename
     with open(str(path), 'rb') as file_:

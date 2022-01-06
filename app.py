@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 
 from flask import Flask, request, jsonify, send_from_directory
-from backend.geopoint import GeoPoint
-from backend.geotiff_merger import merge_files
-from backend.checksum_generator import get_checksum
+from backend import GeoPoint
+from backend import GeotiffMerger
 
 app = Flask(__name__)
 app.config['LOAD_PATH'] = '/home/user/projects/elevation_map/resources/geotiff/'
 app.config['SAVE_PATH'] = '/home/user/projects/elevation_map/resources/merged_data/'
 url_prefix = '/api/v1'
+merger = GeotiffMerger(app.config['LOAD_PATH'], app.config['SAVE_PATH'])
 
 messages = {
     'NO_MATCH_ARGS': 'no matching call with these arguments',
@@ -57,8 +57,7 @@ def root_api():
 @app.route(f'{url_prefix}/polygon')
 def get_polygon_api():
     points = process_points(request.args)
-    outfile = merge_files(points, app.config['LOAD_PATH'],
-            app.config['SAVE_PATH'])
+    outfile = merger.merge_points(points)
     try:
         return send_from_directory(app.config['SAVE_PATH'],
                 path=outfile, as_attachment=True)
