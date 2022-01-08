@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 from flask import Flask, request, jsonify, send_from_directory
 from backend import GeoPoint
 from backend import GeotiffMerger
@@ -17,7 +18,8 @@ messages = {
 
 request_links = {
     'routes': [
-        f'{url_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>'
+        f'{url_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>',
+        f'{url_prefix}/close_connection?checksum=<file_checksum>',
     ]
 }
 
@@ -61,6 +63,17 @@ def get_polygon_api():
     try:
         return send_from_directory(app.config['SAVE_PATH'],
                 path=outfile, as_attachment=True)
+    except Exception as e:
+        return return_error(e)
+
+@app.route(f'{url_prefix}/close_connection')
+def close_connection_api():
+    checksum = request.args.get('checksum')
+    if not checksum:
+        return return_error(messages['NO_MATCH_ARGS'])
+    try:
+        os.remove(f'{app.config["SAVE_PATH"]}/{checksum}.tif')
+        return {'filename': f'{checksum}.tif', 'deleted': True}
     except Exception as e:
         return return_error(e)
 

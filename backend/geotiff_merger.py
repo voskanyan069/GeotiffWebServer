@@ -14,7 +14,7 @@ class GeotiffMerger:
         self.save_path = save_path
 
     def merge_points(self, points):
-        if ( len(points) != 2 ) and ( len(points) != 4):
+        if (len(points) != 2) and (len(points) != 4):
             raise ValueError("Points array length must be 2 or 4")
         files = []
         gf = GeoFile(path=self.load_path)
@@ -59,6 +59,7 @@ class GeotiffMerger:
         os.remove(path)
     
 if __name__ == '__main__':
+    gm = GeotiffMerger('/home/user/projects/elevation_map/resources/geotiff/',
+            './OUT')
     pts = [GeoPoint(40.799, 44.5476), GeoPoint(41.799, 45.5376)]
-    merge_files(pts, '/home/user/projects/elevation_map/resources/geotiff/',
-            'OUT')
+    gm.merge_points(pts)
