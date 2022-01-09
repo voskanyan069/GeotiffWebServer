@@ -2,19 +2,22 @@
 
 import os
 from flask import Flask, request, jsonify, send_from_directory
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from backend import GeoPoint
 from backend import GeotiffMerger
+from backend import return_error, position_error_handle, process_points
+from backend import messages
 
 app = Flask(__name__)
-app.config['LOAD_PATH'] = '/home/user/projects/elevation_map/resources/geotiff/'
-app.config['SAVE_PATH'] = '/home/user/projects/elevation_map/resources/merged_data/'
-url_prefix = '/api/v1'
-merger = GeotiffMerger(app.config['LOAD_PATH'], app.config['SAVE_PATH'])
+limiter = Limiter(app, key_func=get_remote_address,
+        default_limits=['50 per hour'])
 
-messages = {
-    'NO_MATCH_ARGS': 'no matching call with these arguments',
-    'INCORRECT_ARG_SIZE': 'incorrect size of passed argument',
-}
+res_path = '/home/user/projects/elevation_map/resources'
+app.config['LOAD_PATH'] = f'{res_path}/geotiff/'
+app.config['SAVE_PATH'] = f'{res_path}/merged_data/'
+merger = GeotiffMerger(app.config['LOAD_PATH'], app.config['SAVE_PATH'])
+url_prefix = '/api/v1'
 
 request_links = {
     'routes': [
@@ -23,41 +26,15 @@ request_links = {
     ]
 }
 
-def return_error(err):
-    return {'status': 'error', 'message': str(err)}
-
-def position_error_handle(lat, lon):
-    try:
-        lat = float(lat)
-        lon = float(lon)
-    except ValueError as e:
-        return return_error(e)
-    else:
-        return GeoPoint(lat, lon)
-
-def process_points(args):
-    sw = args.get('sw')
-    ne = args.get('ne')
-    if not sw or not ne:
-        return return_error(messages['NO_MATCH_ARGS'])
-    sw, ne = sw.split(','), ne.split(',')
-    if ( len(sw) != 2 ) or ( len(ne) != 2):
-        return return_error(messages['INCORRECT_ARG_SIZE'])
-    sw = position_error_handle(sw[0], sw[1])
-    ne = position_error_handle(ne[0], ne[1])
-    if type(sw) is dict:
-        return sw
-    if type(ne) is dict:
-        return ne
-    return sw, ne
-
 @app.route('/')
 @app.route('/help')
 def root_api():
     return request_links
 
 @app.route(f'{url_prefix}/polygon')
+@limiter.limit('5 per minute')
 def get_polygon_api():
+    return {'hi': True}
     points = process_points(request.args)
     outfile = merger.merge_points(points)
     try:
@@ -79,7 +56,7 @@ def close_connection_api():
 
 @app.errorhandler(404)
 def page_not_found_api(err):
-    return {'status': 'error', 'message': str(err)}
+    return return_error(err)
 
 if __name__ == '__main__':
     app.run(debug=True, port=6767)
