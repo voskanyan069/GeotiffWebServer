@@ -34,10 +34,9 @@ def root_api():
 @app.route(f'{url_prefix}/polygon')
 @limiter.limit('5 per minute')
 def get_polygon_api():
-    return {'hi': True}
-    points = process_points(request.args)
-    outfile = merger.merge_points(points)
     try:
+        points = process_points(request.args)
+        outfile = merger.merge_points(points)
         return send_from_directory(app.config['SAVE_PATH'],
                 path=outfile, as_attachment=True)
     except Exception as e:
@@ -56,6 +55,10 @@ def close_connection_api():
 
 @app.errorhandler(404)
 def page_not_found_api(err):
+    return return_error(err)
+
+@app.errorhandler(429)
+def requests_limit_api(err):
     return return_error(err)
 
 if __name__ == '__main__':

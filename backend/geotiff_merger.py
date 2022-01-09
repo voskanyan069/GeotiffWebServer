@@ -15,16 +15,16 @@ class GeotiffMerger:
 
     def merge_points(self, points):
         if (len(points) != 2) and (len(points) != 4):
-            raise ValueError("Points array length must be 2 or 4")
+            raise ValueError('points array length must be 2 or 4')
         files = []
         gf = GeoFile(path=self.load_path)
         gp = GeoPoint()
         sw = points[0] if ( len(points) == 2 ) else gp.min(points)
         ne = points[1] if ( len(points) == 2 ) else gp.max(points)
-        x1 = math.floor(sw.latitude())
-        y1 = math.floor(sw.longitude())
-        x2 = math.ceil(ne.latitude())
-        y2 = math.ceil(ne.longitude())
+        x1, y1 = math.floor(sw.latitude()), math.floor(sw.longitude())
+        x2, y2 = math.ceil(ne.latitude()), math.ceil(ne.longitude())
+        if (x2-x1) + (y2-y1) > 6:
+            raise ValueError('too big size for polygon, please reduce it')
         for i in range(x1, x2):
             for j in range(y1, y2):
                 files.append(gf.filename(GeoPoint(i, j)))
@@ -62,4 +62,5 @@ if __name__ == '__main__':
     gm = GeotiffMerger('/home/user/projects/elevation_map/resources/geotiff/',
             './OUT')
     pts = [GeoPoint(40.799, 44.5476), GeoPoint(41.799, 45.5376)]
+    #pts = [GeoPoint(39.1, 43.1), GeoPoint(42.1, 47.1)]
     gm.merge_points(pts)
