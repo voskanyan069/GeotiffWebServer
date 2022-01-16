@@ -4,6 +4,7 @@ import os
 from flask import Flask, request, jsonify, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from backend import GeoFile
 from backend import GeoPoint
 from backend import GeotiffMerger
 from backend import return_error, position_error_handle, process_points
@@ -17,12 +18,13 @@ res_path = '/home/user/projects/elevation_map/resources'
 app.config['LOAD_PATH'] = f'{res_path}/geotiff/'
 app.config['SAVE_PATH'] = f'{res_path}/merged_data/'
 merger = GeotiffMerger(app.config['LOAD_PATH'], app.config['SAVE_PATH'])
+geofile = GeoFile(save_path=app.config['SAVE_PATH'])
 url_prefix = '/api/v1'
 
 request_links = {
     'routes': [
         f'{url_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>',
-        f'{url_prefix}/close_connection?checksum=<file_checksum>',
+        f'{url_prefix}/close_connection?sw=<lat,lon>&ne=<lat,lon>',
     ]
 }
 
@@ -36,7 +38,7 @@ def root_api():
 def get_polygon_api():
     try:
         points = process_points(request.args)
-        outfile = merger.merge_points(points)
+        outfile = merger.merge_points(points).split('/')[-1]
         return send_from_directory(app.config['SAVE_PATH'],
                 path=outfile, as_attachment=True)
     except Exception as e:
@@ -44,12 +46,11 @@ def get_polygon_api():
 
 @app.route(f'{url_prefix}/close_connection')
 def close_connection_api():
-    checksum = request.args.get('checksum')
-    if not checksum:
-        return return_error(messages['NO_MATCH_ARGS'])
     try:
-        os.remove(f'{app.config["SAVE_PATH"]}/{checksum}.tif')
-        return {'filename': f'{checksum}.tif', 'deleted': True}
+        points = process_points(request.args)
+        path = f'{geofile.merged_filename(points)}.tif'
+        os.remove(path)
+        return {'filename': path.split('/')[-1], 'deleted': True}
     except Exception as e:
         return return_error(e)
 

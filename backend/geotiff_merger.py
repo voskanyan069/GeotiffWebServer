@@ -6,7 +6,6 @@ import math
 from osgeo import gdal
 from geofile import GeoFile
 from geopoint import GeoPoint
-from checksum_generator import GenerateChecksum
 
 class GeotiffMerger:
     def __init__(self, load_path, save_path):
@@ -17,46 +16,40 @@ class GeotiffMerger:
         if (len(points) != 2) and (len(points) != 4):
             raise ValueError('points array length must be 2 or 4')
         files = []
-        gf = GeoFile(path=self.load_path)
+        gf = GeoFile(self.load_path, self.save_path)
         gp = GeoPoint()
         sw = points[0] if ( len(points) == 2 ) else gp.min(points)
         ne = points[1] if ( len(points) == 2 ) else gp.max(points)
         x1, y1 = math.floor(sw.latitude()), math.floor(sw.longitude())
-        x2, y2 = math.ceil(ne.latitude()), math.ceil(ne.longitude())
+        x2, y2 = math.floor(ne.latitude()), math.floor(ne.longitude())
         if (x2-x1) + (y2-y1) > 6:
             raise ValueError('too big size for polygon, please reduce it')
-        for i in range(x1, x2):
-            for j in range(y1, y2):
-                files.append(gf.filename(GeoPoint(i, j)))
-        hash_name = id(files)
-        vrt_path = self.__build_vrt(files, hash_name)
-        tif_name = self.__build_geotiff(vrt_path, hash_name)
+        for i in range(x1, x2+1):
+            for j in range(y1, y2+1):
+                files.append(gf.create_tif_path(GeoPoint(i, j)))
+        file_path = gf.merged_filename(( GeoPoint(x1,y1), GeoPoint(x2,y2) ))
+        vrt_path = self.__build_vrt(files, file_path)
+        tif_name = self.__build_geotiff(file_path)
         self.__remove_vrt(vrt_path)
-        self.__rename_geotiff(f'{hash_name}.tif', tif_name)
         return tif_name
     
-    def __build_vrt(self, files, vrt_name):
-        out_file = f'{self.save_path}/{vrt_name}.vrt'
+    def __build_vrt(self, files, vrt_path):
+        out_file = f'{vrt_path}.vrt'
         print(f'Creating {out_file} ...')
         gdal.BuildVRT(out_file, files)
         return out_file
     
-    def __build_geotiff(self, vrt_path, name):
-        out_file = f'{self.save_path}/{name}.tif'
+    def __build_geotiff(self, path):
+        out_file = f'{path}.tif'
         print(f'Creating {out_file} ...')
         options = ['-of GTiff', '-co "TILED=YES"']
         options_str = ' '.join(options)
-        gdal.Translate(out_file, vrt_path, options=options_str)
-        tif_name = f'{GenerateChecksum(out_file)}.tif'
-        return tif_name
+        gdal.Translate(out_file, f'{path}.vrt', options=options_str)
+        return out_file
     
-    def __rename_geotiff(self, old, new):
-        print(f'Renaming {old} to {new} ...')
-        os.rename(f'{self.save_path}/{old}', f'{self.save_path}/{new}')
-    
-    def __remove_vrt(self, path):
-        print(f'Removing {path} ...')
-        os.remove(path)
+    def __remove_vrt(self, vrt_path):
+        print(f'Removing {vrt_path} ...')
+        os.remove(vrt_path)
     
 if __name__ == '__main__':
     gm = GeotiffMerger('/home/user/projects/elevation_map/resources/geotiff/',
