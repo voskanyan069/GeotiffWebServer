@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 class GeoPoint:
-    _latitude = 0
-    _longitude = 0
-
     def __init__(self, lat=0, lon=0):
         self._latitude = lat
         self._longitude = lon
@@ -16,9 +13,6 @@ class GeoPoint:
 
     def get(self):
         return self._latitude, self._longitude
-
-    def copy(self):
-        return self
 
     def from_tuple(self, tup):
         gp = GeoPoint(tup[0], tup[1])
