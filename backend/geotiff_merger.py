@@ -22,7 +22,7 @@ class GeotiffMerger:
         ne = points[1] if ( len(points) == 2 ) else gp.max(points)
         x1, y1 = math.floor(sw.latitude()), math.floor(sw.longitude())
         x2, y2 = math.floor(ne.latitude()), math.floor(ne.longitude())
-        if (x2-x1) + (y2-y1) > 6:
+        if (x2-x1) + (y2-y1) > 30:
             raise ValueError('too big size for polygon, please reduce it')
         for i in range(x1, x2+1):
             for j in range(y1, y2+1):
