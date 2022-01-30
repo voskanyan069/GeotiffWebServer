@@ -1,9 +1,11 @@
 {
 	"config": {
 		"port": 6767,
-		"save_path": "/home/user/projects/elevation_map/resources/geotiff/",
-		"load_path": "/home/user/projects/elevation_map/resources/merged_data/",
-		"request_limit": "5 per minute",
+		"save_path": "/home/user/projects/elevation_map/resources/merged_data/",
+		"load_path": "/home/user/projects/elevation_map/resources/geotiff/",
+		"request_limit": [
+			"5 per minute"
+		],
 		"polygon_limit": 6
 	}
 }
