@@ -1,71 +1,68 @@
 #!/usr/bin/env python3
 
-import os
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from backend import GeoFile
-from backend import GeoPoint
-from backend import GeotiffMerger
-from backend import ConfigParser
-from backend import return_error, position_error_handle, process_points
-from backend import messages
+from backend import ArgParser, ConfigParser, GeotiffMerger, \
+                    parse_points, return_error, clean
 
 app = Flask(__name__)
-parser = ConfigParser()
-parser.parse_arguments()
-config_ = parser.config()
-app.config['SAVE_PATH'] = config_['save_path']
-app.config['LOAD_PATH'] = config_['load_path']
-merger = GeotiffMerger(app.config['LOAD_PATH'], app.config['SAVE_PATH'])
-geofile = GeoFile(save_path=app.config['SAVE_PATH'])
+arg_parser = ArgParser()
+args = arg_parser.get_args()
+config_parser = ConfigParser()
+config = config_parser.parse(args.config)
+gt_merger = GeotiffMerger(config['load_path'], config['save_path'])
 limiter = Limiter(app, key_func=get_remote_address,
-        default_limits=config_['request_limit'])
+        default_limits=config['request_limit'])
 
-url_prefix = '/api/v1'
-request_links = {
+api_prefix = '/api/v1'
+routes = {
     'routes': [
-        f'{url_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>',
-        f'{url_prefix}/close_connection?sw=<lat,lon>&ne=<lat,lon>',
+        f'{api_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>',
+        f'{api_prefix}/close_connection?sw=<lat,lon>&ne=<lat,lon>',
     ]
 }
 
 @app.route('/')
 @app.route('/help')
 @limiter.exempt
-def root_api():
-    return request_links
+def help():
+    return routes
 
-@app.route(f'{url_prefix}/polygon')
-def get_polygon_api():
+@app.route(f'{api_prefix}/polygon')
+def get_polygon():
     try:
-        points = process_points(request.args)
-        outfile = merger.merge_points(points).split('/')[-1]
-        return send_from_directory(app.config['SAVE_PATH'],
-                path=outfile, as_attachment=True)
-    except Exception as e:
-        return return_error(e)
+        points = parse_points(request.args)
+        output = gt_merger.merge_points(points).split('/')[-1]
+        return send_from_directory(config['save_path'], path=output,
+                as_attachment=True)
+    except Exception as err:
+        return return_error(err)
 
-@app.route(f'{url_prefix}/close_connection')
+@app.route(f'{api_prefix}/close_connection')
 @limiter.exempt
-def close_connection_api():
+def close_connection():
     try:
-        points = process_points(request.args)
-        path = f'{geofile.merged_filename(points)}.tif'
-        os.remove(path)
-        return {'filename': path.split('/')[-1], 'deleted': True}
-    except Exception as e:
-        return return_error(e)
+        points = parse_points(request.args)
+        return clean(points, config['save_path'])
+    except Exception as err:
+        return return_error(err)
 
 @app.errorhandler(404)
 @limiter.exempt
-def page_not_found_api(err):
+def page_not_found(err):
     return return_error(err)
 
 @app.errorhandler(429)
 @limiter.exempt
-def requests_limit_api(err):
+def requests_limit(err):
     return return_error(err)
 
+def main():
+    if args.install:
+        print('install')
+        return
+    app.run(debug=True, port=config['port'])
+
 if __name__ == '__main__':
-    app.run(debug=True, port=config_['port'])
+    main()

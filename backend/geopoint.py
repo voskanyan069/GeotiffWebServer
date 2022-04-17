@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 class GeoPoint:
     def __init__(self, lat=0, lon=0):
         self._latitude = lat
@@ -15,12 +13,11 @@ class GeoPoint:
         return self._latitude, self._longitude
 
     def from_tuple(self, tup):
-        gp = GeoPoint(tup[0], tup[1])
-        return gp
+        point = GeoPoint(tup[0], tup[1])
+        return point
 
     def min(self, points):
-        min_lat = points[0].latitude()
-        min_lon = points[0].longitude()
+        min_lat, min_lon = points[0].get()
         for i in range(1, len(points)):
             if points[i].latitude() < min_lat:
                 min_lat = points[i].latitude()
@@ -29,8 +26,7 @@ class GeoPoint:
         return GeoPoint(min_lat, min_lon)
 
     def max(self, points):
-        max_lat = points[0].latitude()
-        max_lon = points[0].longitude()
+        max_lat, max_lon = points[0].get()
         for i in range(1, len(points)):
             if points[i].latitude() > max_lat:
                 max_lat = points[i].latitude()

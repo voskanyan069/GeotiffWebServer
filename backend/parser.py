@@ -1,28 +1,29 @@
-#!/usr/bin/env python3
-
 import sys
 import json
 import argparse
+
+class ArgParser:
+    def __init__(self):
+        parser = argparse.ArgumentParser('Allowed options')
+        parser.add_argument('--config', default='./config.json',
+                help='path to config file')
+        parser.add_argument('--install', default=False, action='store_true',
+                help='install service')
+        self.__args = parser.parse_args()
+
+    def get_args(self):
+        return self.__args
 
 class ConfigParser:
     def __init__(self):
         pass
 
-    def parse_arguments(self):
-        parser = argparse.ArgumentParser()
-        parser.add_argument('--config', help = 'config file path')
-        args = parser.parse_args()
-        args = vars(args)
-        self.config_file = args['config']
-        if not self.config_file:
-            self.config_file = 'config.json'
-
-    def config(self):
+    def parse(self, path):
         try:
-            file_ = open(self.config_file)
-        except FileNotFoundError as e:
-            print(f' [E] {e.strerror}: {e.filename}')
-            sys.exit(e.errno)
+            file_ = open(path)
+        except FileNotFoundError as err:
+            print(f'{err.strerror}: {err.filename}')
+            sys.exit(err.errno)
         else:
             data = json.load(file_)
             data = data['config']

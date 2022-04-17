@@ -1,35 +1,38 @@
-#!/usr/bin/env python3
-
+import os
+from geofile import GeoFile
 from geopoint import GeoPoint
-
-messages = {
-    'NO_MATCH_ARGS': 'no matching call with these arguments',
-    'INCORRECT_ARG_SIZE': 'incorrect size of passed argument',
-    'POLYGON_SIZE_LIMIT': 'too big size for polygon, please reduce it',
-}
+from messages import error_messages
 
 def return_error(err):
     return {'status': 'error', 'message': str(err)}
 
-def position_error_handle(lat, lon):
+def positions2geopoint(lat, lon):
     try:
         lat = float(lat)
         lon = float(lon)
         return GeoPoint(lat, lon)
-    except ValueError as e:
-        raise e
+    except ValueError as err:
+        raise err
 
-def process_points(args):
+def parse_points(args):
     sw = args.get('sw')
     ne = args.get('ne')
     if not sw or not ne:
-        raise ValueError(messages['NO_MATCH_ARGS'])
+        raise ValueError(error_messages['NO_MATCH_ARGS'])
     sw, ne = sw.split(','), ne.split(',')
     if (len(sw) != 2) or (len(ne) != 2):
-        raise ValueError(messages['INCORRECT_ARG_SIZE'])
+        raise ValueError(error_messages['INCORRECT_ARG_SIZE'])
     try:
-        sw = position_error_handle(sw[0], sw[1])
-        ne = position_error_handle(ne[0], ne[1])
+        sw = positions2geopoint(sw[0], sw[1])
+        ne = positions2geopoint(ne[0], ne[1])
         return sw, ne
-    except ValueError as e:
-        raise e
+    except ValueError as err:
+        raise err
+
+def clean(points, path):
+    geofile = GeoFile(path)
+    print(path)
+    path += f'{geofile.merge_filenames(points)}.tif'
+    print(path)
+    os.remove(path)
+    return {'filename': path.split('/')[-1], 'deleted': True}
