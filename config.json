@@ -6,6 +6,7 @@
 		"request_limit": [
 			"5 per minute"
 		],
-		"polygon_limit": 6
+		"polygon_limit": 6,
+		"clean_timeout": 1
 	}
 }

@@ -4,7 +4,7 @@ from flask import Flask, request, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from backend import ArgParser, ConfigParser, GeotiffMerger, \
-                    parse_points, return_error, clean
+                    parse_points, return_error, clean_after_timeout
 
 app = Flask(__name__)
 arg_parser = ArgParser()
@@ -19,7 +19,6 @@ api_prefix = '/api/v1'
 routes = {
     'routes': [
         f'{api_prefix}/polygon?sw=<lat,lon>&ne=<lat,lon>',
-        f'{api_prefix}/close_connection?sw=<lat,lon>&ne=<lat,lon>',
     ]
 }
 
@@ -34,17 +33,10 @@ def get_polygon():
     try:
         points = parse_points(request.args)
         output = gt_merger.merge_points(points).split('/')[-1]
+        abs_path = f'{config["save_path"]}/{output}'
+        clean_after_timeout(int(config["clean_timeout"]), abs_path)
         return send_from_directory(config['save_path'], path=output,
                 as_attachment=True)
-    except Exception as err:
-        return return_error(err)
-
-@app.route(f'{api_prefix}/close_connection')
-@limiter.exempt
-def close_connection():
-    try:
-        points = parse_points(request.args)
-        return clean(points, config['save_path'])
     except Exception as err:
         return return_error(err)
 

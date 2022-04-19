@@ -1,4 +1,5 @@
 import os
+import threading
 from geofile import GeoFile
 from geopoint import GeoPoint
 from messages import error_messages
@@ -29,10 +30,12 @@ def parse_points(args):
     except ValueError as err:
         raise err
 
-def clean(points, path):
-    geofile = GeoFile(path)
-    print(path)
-    path += f'{geofile.merge_filenames(points)}.tif'
-    print(path)
+def clean_after_timeout(minutes, path):
+    print(f'Waiting for the clean {minutes} minutes...')
+    sleep_time = minutes * 60
+    cleaner = threading.Timer(sleep_time, clean, args=[path])
+    cleaner.start()
+
+def clean(path):
+    print(f'Removing {path}...')
     os.remove(path)
-    return {'filename': path.split('/')[-1], 'deleted': True}
