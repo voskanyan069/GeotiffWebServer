@@ -1,0 +1,16 @@
+[Unit]
+Description=Elevation map web server service
+StartLimitIntervalSec=1
+StartLimitBurst=10
+After=network.target
+
+[Service]
+User=root
+Type=simple
+WorkingDirectory=PY_EXEC_PWD
+ExecStart=PY_EXEC_PATH
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

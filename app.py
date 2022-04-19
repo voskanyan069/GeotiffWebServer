@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import os
 from flask import Flask, request, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from backend import ArgParser, ConfigParser, GeotiffMerger, \
-                    parse_points, return_error, clean_after_timeout
+                    parse_points, return_error, \
+                    clean_after_timeout, install_service
 
 app = Flask(__name__)
 arg_parser = ArgParser()
@@ -52,7 +54,8 @@ def requests_limit(err):
 
 def main():
     if args.install:
-        print('install')
+        exec_path = os.path.abspath(__file__)
+        install_service(exec_path)
         return
     app.run(debug=True, port=config['port'])
 
