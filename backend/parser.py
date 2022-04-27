@@ -9,6 +9,8 @@ class ArgParser:
                 help='path to config file')
         parser.add_argument('--install', default=False, action='store_true',
                 help='install service')
+        parser.add_argument('--uninstall', default=False, action='store_true',
+                help='uninstall service')
         self.__args = parser.parse_args()
 
     def get_args(self):

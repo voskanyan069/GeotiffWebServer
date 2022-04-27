@@ -6,7 +6,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from backend import ArgParser, ConfigParser, GeotiffMerger, \
                     parse_points, return_error, \
-                    clean_after_timeout, install_service
+                    clean_after_timeout, install_service, uninstall_service
 
 app = Flask(__name__)
 arg_parser = ArgParser()
@@ -56,6 +56,9 @@ def main():
     if args.install:
         exec_path = os.path.abspath(__file__)
         install_service(exec_path)
+        return
+    if args.uninstall:
+        uninstall_service()
         return
     app.run(debug=True, port=config['port'])
 
