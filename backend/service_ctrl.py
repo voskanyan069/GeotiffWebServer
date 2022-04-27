@@ -1,4 +1,5 @@
 import os
+import sys
 import fileinput
 
 service_name = 'elevation_map'
@@ -13,7 +14,8 @@ def exec_commands(commands):
     for cmd in commands:
         print(cmd)
         if 0 != os.system(cmd):
-            raise Exception(f'{cmd} command failed')
+            print(f'Error: {cmd} command failed')
+            sys.exit(-1)
 
 def create_service(srv_path):
     commands = [
@@ -32,6 +34,7 @@ def install_service(exec_path):
 
 def uninstall_service():
     commands = [
+            f'sudo systemctl daemon-reload',
             f'sudo systemctl stop {service_name}',
             f'sudo rm -f /usr/lib/systemd/system/{service_path}',
             f'sudo rm -f /etc/systemd/{service_path}',
