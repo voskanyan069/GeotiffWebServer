@@ -25,12 +25,18 @@ class GeotiffMerger(Merger):
             raise ValueError('POLYGON_SIZE_LIMIT')
         for i in range(x1, x2+1):
             for j in range(y1, y2+1):
-                files.append(geofile.generate_path(GeoPoint(i,j)))
+                filename = geofile.generate_path(GeoPoint(i,j))
+                self.__check_geofile(filename)
+                files.append(filename)
         file_path = geofile.merge_filenames((GeoPoint(x1,y1), GeoPoint(x2,y2)))
         vrt_path = self.__build_vrt(files, file_path)
         geotiff_name = self.__build_geotiff(file_path)
         self.__remove_vrt(vrt_path)
         return geotiff_name
+
+    def __check_geofile(self, filename):
+        if not os.path.exists(filename) or not os.path.isfile(filename):
+            raise ValueError(f'{filename} does not exists')
     
     def __build_vrt(self, files, vrt_path):
         out_file = f'{vrt_path}.vrt'
