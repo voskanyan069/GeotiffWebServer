@@ -34,9 +34,9 @@ def install_service(exec_path):
 
 def uninstall_service():
     commands = [
-            f'sudo systemctl daemon-reload',
             f'sudo systemctl stop {service_name}',
             f'sudo rm -f /usr/lib/systemd/system/{service_path}',
             f'sudo rm -f /etc/systemd/{service_path}',
+            f'sudo systemctl daemon-reload',
     ]
     exec_commands(commands)
