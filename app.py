@@ -60,7 +60,7 @@ def main():
     if args.uninstall:
         uninstall_service()
         return
-    app.run(debug=True, port=config['port'])
+    app.run(host='0.0.0.0', port=config['port'])
 
 if __name__ == '__main__':
     main()
